@@ -65,7 +65,7 @@ class GalleryActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_gallery)
 
-        toolbar         = findViewById(R.id.toolbar)
+        PhotoHistoryStore.init(this)
         progressBar     = findViewById(R.id.progressBar)
         emptyContainer  = findViewById(R.id.emptyContainer)
         emptyView       = findViewById(R.id.emptyView)
@@ -88,6 +88,9 @@ class GalleryActivity : AppCompatActivity() {
                     url          = photo.fullUrl,
                     jsIsPortrait = false,
                     onSuccess    = { name, _ ->
+                        PhotoHistoryStore.markDownloaded(this, photo.id)
+                        val pos = adapter.currentList.indexOfFirst { it.id == photo.id }
+                        if (pos != -1) adapter.notifyItemChanged(pos)
                         Toast.makeText(this, getString(R.string.saved_landscape, name), Toast.LENGTH_SHORT).show()
                     },
                     onError      = { msg ->
@@ -95,7 +98,12 @@ class GalleryActivity : AppCompatActivity() {
                     }
                 )
             },
-            onShare = { photo -> ShareHelper.share(this, photo.fullUrl) },
+            onShare = { photo ->
+                PhotoHistoryStore.markShared(this, photo.id)
+                val pos = adapter.currentList.indexOfFirst { it.id == photo.id }
+                if (pos != -1) adapter.notifyItemChanged(pos)
+                ShareHelper.share(this, photo.fullUrl)
+            },
             onToggleRequest = { photo -> handleToggle(photo) },
             onLongPress = { photo ->
                 if (!isSelectMode) {
@@ -133,6 +141,12 @@ class GalleryActivity : AppCompatActivity() {
     }
 
     // ── Options menu ──────────────────────────────────────────────────────────
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh status badges when returning from PhotoViewActivity
+        if (!isFirstLoad) adapter.notifyDataSetChanged()
+    }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_gallery, menu)
@@ -255,6 +269,8 @@ class GalleryActivity : AppCompatActivity() {
             },
             onComplete = { saved, failed ->
                 setBatchButtonsEnabled(true)
+                selected.forEach { PhotoHistoryStore.markDownloaded(this, it.id) }
+                adapter.notifyDataSetChanged()
                 selectionCount.text = getString(R.string.select_count, adapter.selectedCount(), PhotoAdapter.MAX_SELECTION)
                 val msg = if (failed == 0)
                     getString(R.string.batch_saved_all, saved)
@@ -275,6 +291,8 @@ class GalleryActivity : AppCompatActivity() {
             photos    = selected,
             onReady   = {
                 setBatchButtonsEnabled(true)
+                selected.forEach { PhotoHistoryStore.markShared(this, it.id) }
+                adapter.notifyDataSetChanged()
                 selectionCount.text = getString(R.string.select_count, adapter.selectedCount(), PhotoAdapter.MAX_SELECTION)
             },
             onError   = { msg ->

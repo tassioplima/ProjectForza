@@ -37,6 +37,41 @@
         android:contentDescription="@null"
         android:visibility="gone" />
 
+    <!-- Status badges (top-left): tiny icons showing download/share history.
+         Container is GONE until at least one badge is visible. -->
+    <LinearLayout
+        android:id="@+id/statusBadges"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_margin="4dp"
+        android:background="#99000000"
+        android:orientation="horizontal"
+        android:paddingHorizontal="4dp"
+        android:paddingVertical="3dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/badgeDownloaded"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:src="@drawable/ic_download"
+            android:tint="@android:color/white"
+            android:contentDescription="@null"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/badgeShared"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:src="@drawable/ic_share_photo"
+            android:tint="@android:color/white"
+            android:contentDescription="@null"
+            android:layout_marginStart="2dp"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
     <!-- Bottom action bar.
          clickable + focusable = TRUE so the touch is consumed HERE
          and does NOT bubble up to photoImage, preventing accidental opens. -->

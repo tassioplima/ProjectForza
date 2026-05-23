@@ -117,12 +117,15 @@ class PhotoAdapter(
     // ── ViewHolder ────────────────────────────────────────────────────────────
 
     class PhotoViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        private val imageView:       ImageView     = view.findViewById(R.id.photoImage)
-        private val selectionOverlay: View         = view.findViewById(R.id.selectionOverlay)
-        private val selectionIcon:   ImageView     = view.findViewById(R.id.selectionIcon)
-        private val bottomBar:       View          = view.findViewById(R.id.bottomBar)
-        private val btnDownload:     MaterialButton = view.findViewById(R.id.btnDownload)
-        private val btnShare:        MaterialButton = view.findViewById(R.id.btnShare)
+        private val imageView:        ImageView      = view.findViewById(R.id.photoImage)
+        private val selectionOverlay: View           = view.findViewById(R.id.selectionOverlay)
+        private val selectionIcon:    ImageView      = view.findViewById(R.id.selectionIcon)
+        private val bottomBar:        View           = view.findViewById(R.id.bottomBar)
+        private val btnDownload:      MaterialButton = view.findViewById(R.id.btnDownload)
+        private val btnShare:         MaterialButton = view.findViewById(R.id.btnShare)
+        private val statusBadges:     View           = view.findViewById(R.id.statusBadges)
+        private val badgeDownloaded:  ImageView      = view.findViewById(R.id.badgeDownloaded)
+        private val badgeShared:      ImageView      = view.findViewById(R.id.badgeShared)
 
         fun bind(
             photo: Photo,
@@ -165,6 +168,13 @@ class PhotoAdapter(
                 btnDownload.setOnClickListener { onDownload(photo) }
                 btnShare.setOnClickListener    { onShare(photo) }
             }
+
+            // ── Status badges (both modes) ─────────────────────────────────
+            val wasDownloaded = PhotoHistoryStore.isDownloaded(photo.id)
+            val wasShared     = PhotoHistoryStore.isShared(photo.id)
+            badgeDownloaded.visibility = if (wasDownloaded) View.VISIBLE else View.GONE
+            badgeShared.visibility     = if (wasShared)     View.VISIBLE else View.GONE
+            statusBadges.visibility    = if (wasDownloaded || wasShared) View.VISIBLE else View.GONE
         }
     }
 }

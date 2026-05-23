@@ -49,6 +49,8 @@ class PhotoViewActivity : AppCompatActivity() {
         val photo: Photo = intent.getParcelableExtra(EXTRA_PHOTO)
             ?: run { finish(); return }
 
+        PhotoHistoryStore.init(this)
+
         val toolbar      = findViewById<MaterialToolbar>(R.id.toolbar)
         val fullImage    = findViewById<TouchImageView>(R.id.fullImage)
         val progressBar  = findViewById<CircularProgressIndicator>(R.id.progressBar)
@@ -83,6 +85,7 @@ class PhotoViewActivity : AppCompatActivity() {
                 jsIsPortrait          = false,
                 extraRotationDegrees  = fullImage.manualRotation,
                 onSuccess             = { name, _ ->
+                    PhotoHistoryStore.markDownloaded(this, photo.id)
                     Toast.makeText(this, getString(R.string.saved_landscape, name), Toast.LENGTH_SHORT).show()
                 },
                 onError = { msg ->
@@ -92,6 +95,7 @@ class PhotoViewActivity : AppCompatActivity() {
         }
 
         btnShare.setOnClickListener {
+            PhotoHistoryStore.markShared(this, photo.id)
             ShareHelper.share(this, photo.fullUrl, fullImage.manualRotation)
         }
     }
