@@ -7,6 +7,7 @@ import android.view.View
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -81,10 +82,14 @@ class LoginWebViewActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView, url: String) {
                 progressBar.visibility = View.GONE
                 if (isOnForzaSite(url)) {
-                    // OAuth complete — persist cookies and return to MainActivity
-                    CookieManager.getInstance().flush()
-                    setResult(RESULT_OK)
-                    finish()
+                    // Delay slightly so the page's JavaScript has time to:
+                    //  1. Set session cookies via Set-Cookie response headers / JS
+                    //  2. Make initial API calls (letting shouldInterceptRequest capture the Bearer token)
+                    webView.postDelayed({
+                        CookieManager.getInstance().flush()
+                        setResult(RESULT_OK)
+                        finish()
+                    }, 2000)
                 }
             }
 
@@ -94,6 +99,25 @@ class LoginWebViewActivity : AppCompatActivity() {
             ): Boolean {
                 val url = request.url.toString()
                 return !TRUSTED.any { url.contains(it) }
+            }
+
+            /**
+             * Intercept every outbound request from the WebView.
+             * If the page's JavaScript calls api.forza.net with an Authorization header,
+             * capture it so [ForzaApiService] can reuse the same Bearer token for
+             * native HTTP calls — without needing cookie-based auth.
+             */
+            override fun shouldInterceptRequest(
+                view: WebView?,
+                request: WebResourceRequest?
+            ): WebResourceResponse? {
+                val host = request?.url?.host ?: return null
+                if (host.contains("forza.net")) {
+                    request.requestHeaders["Authorization"]
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { ForzaApiService.capturedAuthHeader = it }
+                }
+                return null // let WebView handle normally
             }
         }
 

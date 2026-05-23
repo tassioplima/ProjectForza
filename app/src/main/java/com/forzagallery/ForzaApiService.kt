@@ -24,6 +24,13 @@ object ForzaApiService {
 
     private const val GALLERY_URL = "https://api.forza.net/api/v4/me/gallery/FH6"
 
+    /**
+     * Bearer token captured from the WebView's outbound API requests during login.
+     * Cleared on logout. Allows native HTTP calls to authenticate with the same token
+     * that the forza.net SPA uses, which may differ from cookie-based auth.
+     */
+    var capturedAuthHeader: String? = null
+
     private val FULL_URL_FIELDS = listOf(
         "screenshotUri", "screenshotUrl", "photoUri", "photoUrl",
         "originalUri", "originalUrl", "fullUri", "fullUrl",
@@ -45,11 +52,13 @@ object ForzaApiService {
      */
     suspend fun fetchGallery(mobileUa: String): List<Photo> = withContext(Dispatchers.IO) {
         val cookies = buildCookieHeader()
-        if (cookies.isBlank()) throw AuthException()
+        val token   = capturedAuthHeader
+        if (cookies.isBlank() && token.isNullOrBlank()) throw AuthException()
 
         val conn = (URL(GALLERY_URL).openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
-            setRequestProperty("Cookie", cookies)
+            if (cookies.isNotBlank()) setRequestProperty("Cookie", cookies)
+            if (!token.isNullOrBlank()) setRequestProperty("Authorization", token)
             setRequestProperty("Accept", "application/json")
             setRequestProperty("User-Agent", mobileUa)
             setRequestProperty("Referer", "https://forza.net/")
