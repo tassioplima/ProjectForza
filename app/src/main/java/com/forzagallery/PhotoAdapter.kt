@@ -26,9 +26,9 @@ class PhotoAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PhotoViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_photo, parent, false)
-        // Force each cell to be square (1/3 of available width)
-        val cellSize = parent.measuredWidth / 3
-        view.layoutParams = RecyclerView.LayoutParams(cellSize, cellSize)
+        // Width = half screen (2 columns); height is wrap_content, adapts to image ratio
+        val columnWidth = parent.measuredWidth / 2
+        view.layoutParams = RecyclerView.LayoutParams(columnWidth, RecyclerView.LayoutParams.WRAP_CONTENT)
         return PhotoViewHolder(view)
     }
 

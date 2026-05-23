@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Square photo cell for the 3-column grid in GalleryActivity.
-     Height is set programmatically to equal width (PhotoAdapter.onCreateViewHolder). -->
+<!-- Photo cell for the 2-column staggered grid in GalleryActivity.
+     Height adapts automatically to image aspect ratio (portrait/landscape). -->
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:padding="1dp">
 
     <!-- Photo thumbnail fills the square cell -->
     <ImageView
         android:id="@+id/photoImage"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="centerCrop"
+        android:layout_height="wrap_content"
+        android:scaleType="fitCenter"
+        android:adjustViewBounds="true"
         android:contentDescription="@string/photo_desc"
         android:background="?attr/colorSurfaceVariant" />
 
