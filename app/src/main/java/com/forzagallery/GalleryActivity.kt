@@ -66,7 +66,8 @@ class GalleryActivity : AppCompatActivity() {
         setContentView(R.layout.activity_gallery)
 
         PhotoHistoryStore.init(this)
-        progressBar     = findViewById(R.id.progressBar)
+        toolbar          = findViewById(R.id.toolbar)
+        progressBar      = findViewById(R.id.progressBar)
         emptyContainer  = findViewById(R.id.emptyContainer)
         emptyView       = findViewById(R.id.emptyView)
         retryButton     = findViewById(R.id.retryButton)
