@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher icon foreground — Subaru WRX STI sports car side view -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- ══ MAIN CAR BODY SILHOUETTE (white) ══
+         Side profile of a Subaru WRX STI:
+         front bumper → front fascia → fender → hood → scoop → cowl →
+         windshield → roof → C-pillar → rear window → trunk →
+         rear bumper → underside with wheel arches → close -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="
+        M 5,82
+        C 4,78 5,72 9,67
+        L 14,62
+        L 22,57
+        L 32,55
+        L 38,53
+        C 40,50 45,48 50,48
+        C 55,48 60,50 62,53
+        L 66,55
+        L 68,58
+        L 73,50
+        L 78,47
+        L 90,46
+        C 94,46 97,48 99,52
+        L 101,58
+        L 103,65
+        L 103,84
+        L 94,84
+        A 15,15 0 0 0 64,84
+        L 44,84
+        A 15,15 0 0 0 14,84
+        L 5,84
+        Z" />
+
+    <!-- ══ WINDSHIELD + SIDE GLASS (light blue) ══ -->
+    <path
+        android:fillColor="#B3D9FF"
+        android:pathData="
+        M 68,60
+        L 73,51
+        L 78,48
+        L 90,47
+        C 93,47 96,49 97,52
+        L 95,59
+        L 82,61
+        L 68,61
+        Z" />
+
+    <!-- ══ HOOD SCOOP (light accent — WRX signature) ══ -->
+    <path
+        android:fillColor="#E3F2FD"
+        android:pathData="
+        M 41,53
+        L 44,48
+        L 57,48
+        L 60,53
+        Z" />
+
+    <!-- ══ REAR SPOILER / WING (STI wing) ══ -->
+    <!-- Vertical support post -->
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M 90,47 L 90,52 L 93,52 L 93,47 Z" />
+    <!-- Horizontal wing -->
+    <path
+        android:fillColor="#EEEEEE"
+        android:pathData="M 87,44 L 103,43 L 103,47 L 87,48 Z" />
+
+    <!-- ══ HEADLIGHT (warm white/yellow) ══ -->
+    <path
+        android:fillColor="#FFF59D"
+        android:pathData="
+        M 8,68
+        C 7,65 8,61 11,60
+        L 15,62
+        L 13,68
+        Z" />
+
+    <!-- ══ TAIL LIGHT (red) ══ -->
+    <path
+        android:fillColor="#EF9A9A"
+        android:pathData="M 101,62 L 103,59 L 103,67 L 101,67 Z" />
+
+    <!-- ══ FRONT WHEEL — tyre (dark) ══ -->
+    <path
+        android:fillColor="#212121"
+        android:pathData="M 29,76 m -14,0 a 14,14 0 1,0 28,0 a 14,14 0 1,0 -28,0 Z" />
+    <!-- Front wheel — rim (silver) -->
+    <path
+        android:fillColor="#9E9E9E"
+        android:pathData="M 29,76 m -8,0 a 8,8 0 1,0 16,0 a 8,8 0 1,0 -16,0 Z" />
+    <!-- Front wheel — centre cap (white highlight) -->
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M 29,76 m -3,0 a 3,3 0 1,0 6,0 a 3,3 0 1,0 -6,0 Z" />
+
+    <!-- ══ REAR WHEEL — tyre (dark) ══ -->
+    <path
+        android:fillColor="#212121"
+        android:pathData="M 79,76 m -14,0 a 14,14 0 1,0 28,0 a 14,14 0 1,0 -28,0 Z" />
+    <!-- Rear wheel — rim (silver) -->
+    <path
+        android:fillColor="#9E9E9E"
+        android:pathData="M 79,76 m -8,0 a 8,8 0 1,0 16,0 a 8,8 0 1,0 -16,0 Z" />
+    <!-- Rear wheel — centre cap (white highlight) -->
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M 79,76 m -3,0 a 3,3 0 1,0 6,0 a 3,3 0 1,0 -6,0 Z" />
+
+</vector>

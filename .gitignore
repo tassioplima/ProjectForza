@@ -1,0 +1,76 @@
+# ─── Gradle build outputs ────────────────────────────────────────────────────
+.gradle/
+build/
+app/build/
+**/build/
+
+# ─── Local configuration (machine-specific, never commit) ────────────────────
+local.properties
+*.local.properties
+
+# ─── Android Studio / IntelliJ IDEA ──────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/gradle.xml
+.idea/assetWizardSettings.xml
+.idea/dictionaries
+.idea/libraries
+.idea/navEditor.xml
+.idea/caches/
+
+# ─── Kotlin incremental compilation ──────────────────────────────────────────
+.kotlin/
+
+# ─── Generated sources ────────────────────────────────────────────────────────
+app/src/main/java/com/forzagallery/BuildConfig.java
+
+# ─── APK / AAB / signed bundles (use Releases instead) ──────────────────────
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# ─── OS-specific garbage ─────────────────────────────────────────────────────
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# ─── Logs & temp ─────────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+
+# ─── Sensitive files ─────────────────────────────────────────────────────────
+google-services.json
+# Signing keystore — NEVER commit. Store in CI secrets instead.
+release.keystore
+upload.keystore
+keystore.properties
+
+# ─── Test coverage reports ───────────────────────────────────────────────────
+**/reports/
+**/jacoco/
+
+# ─── Node (if any tooling is added later) ────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-error.log*

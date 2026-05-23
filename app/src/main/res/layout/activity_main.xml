@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Material Design 3 layout
+  ┌──────────────────────────────┐
+  │  MaterialToolbar (TopAppBar) │
+  │  LinearProgressIndicator     │
+  ├──────────────────────────────┤
+  │         WebView              │
+  ├──────────────────────────────┤
+  │  ← Home ↺ Galeria           │  ← M3 IconButton row
+  └──────────────────────────────┘
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- ── Top App Bar (M3 Small Top App Bar) ──────────────────────────── -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fitsSystemWindows="true"
+        app:liftOnScroll="false">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="@string/app_name"
+            app:subtitle="@string/toolbar_subtitle_default"
+            app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge"
+            app:subtitleTextAppearance="@style/TextAppearance.Material3.BodySmall" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- ── Page loading indicator (M3 LinearProgressIndicator) ──────────── -->
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/progressBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:indeterminate="false"
+        android:max="100"
+        android:visibility="gone"
+        app:trackCornerRadius="0dp"
+        app:indicatorColor="?attr/colorPrimary"
+        app:trackColor="?attr/colorSurfaceVariant" />
+
+    <!-- ── WebView ───────────────────────────────────────────────────────── -->
+    <WebView
+        android:id="@+id/webView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- ── Bottom navigation bar (M3 Surface + IconButton pattern) ────────
+         MaterialButton with Widget.Material3.Button.IconButton style
+         provides correct touch targets (48dp), ripple, and tonal icon tint.
+    -->
+    <LinearLayout
+        android:id="@+id/bottomBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="?attr/colorSurface"
+        android:elevation="3dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp">
+
+        <!-- Back -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnBack"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:minWidth="0dp"
+            android:contentDescription="@string/btn_back"
+            app:icon="@drawable/ic_arrow_back" />
+
+        <!-- myForza home -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnHome"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:minWidth="0dp"
+            android:contentDescription="@string/btn_home"
+            app:icon="@drawable/ic_home" />
+
+        <!-- Refresh page -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnRefresh"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:minWidth="0dp"
+            android:contentDescription="@string/btn_refresh"
+            app:icon="@drawable/ic_refresh" />
+
+        <!-- Open local saved gallery -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGallery"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:minWidth="0dp"
+            android:contentDescription="@string/btn_gallery"
+            app:icon="@drawable/ic_photos" />
+
+    </LinearLayout>
+
+</LinearLayout>

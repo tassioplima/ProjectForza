@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!--
+        Grants FileProvider access to files inside getCacheDir()/share/
+        so ShareHelper can pass a content:// URI to external apps.
+    -->
+    <cache-path name="share" path="share/" />
+</paths>

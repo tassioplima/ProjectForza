@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Forza Gallery</string>
+    <string name="toolbar_subtitle_default">forza.net</string>
+    <string name="btn_back">Voltar</string>
+    <string name="btn_home">myForza</string>
+    <string name="btn_refresh">Recarregar</string>
+    <string name="btn_gallery">Galeria local</string>
+    <string name="open_gallery">Abrir galeria</string>
+    <string name="no_previous_page">Sem páginas anteriores</string>
+    <string name="saved_portrait">Guardado (vertical): %1$s</string>
+    <string name="saved_landscape">Guardado (horizontal): %1$s</string>
+    <string name="download_error">Erro ao guardar: %1$s</string>
+    <string name="share_via">Partilhar foto via…</string>
+    <string name="share_error">Erro ao partilhar: %1$s</string>
+</resources>
