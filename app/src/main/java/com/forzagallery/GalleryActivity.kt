@@ -81,7 +81,11 @@ class GalleryActivity : AppCompatActivity() {
 
         // ── Adapter ───────────────────────────────────────────────────────────
         adapter = PhotoAdapter(
-            onOpen = { photo -> PhotoViewActivity.start(this, photo) },
+            onOpen = { photo ->
+                val index = adapter.currentList.indexOfFirst { it.id == photo.id }
+                PhotoSessionStore.currentPhotos = adapter.currentList
+                PhotoViewActivity.start(this, index.coerceAtLeast(0))
+            },
             onDownload = { photo ->
                 DownloadHelper.downloadWithOrientationFix(
                     context      = this,

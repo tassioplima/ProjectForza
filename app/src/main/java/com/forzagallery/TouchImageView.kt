@@ -113,6 +113,13 @@ class TouchImageView @JvmOverloads constructor(
         post { initMatrix() }
     }
 
+    /** Resets rotation and zoom to the default fit-center state. */
+    fun resetTransform() {
+        manualRotation = 0f
+        currentZoom = 1f
+        post { initMatrix() }
+    }
+
     /** Current manual rotation (0, 90, 180, 270) for use when saving/sharing. */
     // Note: Kotlin already generates getManualRotation() from the 'var' above.
     // Use the property directly: touchImageView.manualRotation

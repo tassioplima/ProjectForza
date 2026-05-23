@@ -6,22 +6,11 @@
     android:layout_height="match_parent"
     android:background="@android:color/black">
 
-    <!-- Full-resolution photo with pinch-to-zoom, pan and integrated rotation -->
-    <com.forzagallery.TouchImageView
-        android:id="@+id/fullImage"
+    <!-- ViewPager2 for swipe navigation between photos -->
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/photoPager"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:contentDescription="@string/photo_desc" />
-
-    <!-- Loading indicator while full-res loads -->
-    <com.google.android.material.progressindicator.CircularProgressIndicator
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:indeterminate="true"
-        app:indicatorColor="@android:color/white"
-        app:trackColor="#44FFFFFF" />
+        android:layout_height="match_parent" />
 
     <!-- Top bar: back arrow only -->
     <com.google.android.material.appbar.MaterialToolbar

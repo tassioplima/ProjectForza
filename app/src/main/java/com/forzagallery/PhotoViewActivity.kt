@@ -3,32 +3,30 @@ package com.forzagallery
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import coil.load
-import coil.request.CachePolicy
+import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.progressindicator.CircularProgressIndicator
 
 /**
- * Full-screen photo viewer.
- * Loads the full-resolution image from [Photo.fullUrl] and exposes
- * download and share actions.
+ * Full-screen photo viewer with swipe-left/right navigation between all gallery photos.
+ * Each page hosts a [TouchImageView] that supports pinch-to-zoom, pan, and rotation.
+ * When zoomed in, swipe gestures pan the image; at 1× zoom they navigate pages.
  */
 class PhotoViewActivity : AppCompatActivity() {
 
     companion object {
-        private const val EXTRA_PHOTO = "extra_photo"
+        private const val EXTRA_INDEX = "extra_index"
 
-        fun start(context: Context, photo: Photo) {
+        /** Launch the viewer. Set [PhotoSessionStore.currentPhotos] before calling. */
+        fun start(context: Context, initialIndex: Int) {
             context.startActivity(
                 Intent(context, PhotoViewActivity::class.java)
-                    .putExtra(EXTRA_PHOTO, photo)
+                    .putExtra(EXTRA_INDEX, initialIndex)
             )
         }
     }
@@ -36,7 +34,7 @@ class PhotoViewActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Edge-to-edge, hide system bars for immersive experience
+        // Edge-to-edge immersive mode
         WindowCompat.setDecorFitsSystemWindows(window, false)
         val insetsController = WindowInsetsControllerCompat(window, window.decorView)
         insetsController.hide(WindowInsetsCompat.Type.systemBars())
@@ -45,46 +43,50 @@ class PhotoViewActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_photo_view)
 
-        @Suppress("DEPRECATION")
-        val photo: Photo = intent.getParcelableExtra(EXTRA_PHOTO)
-            ?: run { finish(); return }
+        val photos = PhotoSessionStore.currentPhotos
+        if (photos.isEmpty()) { finish(); return }
+
+        val rawIndex   = intent.getIntExtra(EXTRA_INDEX, 0)
+        val initialIdx = rawIndex.coerceIn(0, photos.size - 1)
 
         PhotoHistoryStore.init(this)
 
-        val toolbar      = findViewById<MaterialToolbar>(R.id.toolbar)
-        val fullImage    = findViewById<TouchImageView>(R.id.fullImage)
-        val progressBar  = findViewById<CircularProgressIndicator>(R.id.progressBar)
-        val btnRotate    = findViewById<MaterialButton>(R.id.btnRotate)
-        val btnDownload  = findViewById<MaterialButton>(R.id.btnDownload)
-        val btnShare     = findViewById<MaterialButton>(R.id.btnShare)
+        val toolbar     = findViewById<MaterialToolbar>(R.id.toolbar)
+        val photoPager  = findViewById<ViewPager2>(R.id.photoPager)
+        val btnRotate   = findViewById<MaterialButton>(R.id.btnRotate)
+        val btnDownload = findViewById<MaterialButton>(R.id.btnDownload)
+        val btnShare    = findViewById<MaterialButton>(R.id.btnShare)
 
         setSupportActionBar(toolbar)
-        supportActionBar?.setDisplayShowTitleEnabled(false)
         toolbar.setNavigationOnClickListener { finish() }
 
-        // Load full-resolution image
-        fullImage.load(photo.fullUrl) {
-            crossfade(true)
-            placeholder(R.drawable.ic_photos)
-            memoryCachePolicy(CachePolicy.ENABLED)
-            diskCachePolicy(CachePolicy.ENABLED)
-            listener(
-                onStart   = { progressBar.visibility = View.VISIBLE  },
-                onSuccess = { _, _ -> progressBar.visibility = View.GONE },
-                onError   = { _, _ -> progressBar.visibility = View.GONE }
-            )
+        val pagerAdapter = PhotoPagerAdapter(photos)
+        photoPager.adapter = pagerAdapter
+        photoPager.setCurrentItem(initialIdx, false)
+
+        // Show "current / total" counter in the toolbar
+        fun updateTitle(index: Int) {
+            supportActionBar?.title = "${index + 1} / ${photos.size}"
+        }
+        updateTitle(initialIdx)
+
+        photoPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) = updateTitle(position)
+        })
+
+        btnRotate.setOnClickListener {
+            pagerAdapter.rotateCurrent(photoPager.currentItem)
         }
 
-        // Each tap rotates 90° clockwise; zoom is reset automatically inside TouchImageView
-        btnRotate.setOnClickListener { fullImage.rotateBy90() }
-
         btnDownload.setOnClickListener {
+            val photo    = pagerAdapter.getPhotoAt(photoPager.currentItem)
+            val rotation = pagerAdapter.getManualRotation(photoPager.currentItem)
             DownloadHelper.downloadWithOrientationFix(
-                context               = this,
-                url                   = photo.fullUrl,
-                jsIsPortrait          = false,
-                extraRotationDegrees  = fullImage.manualRotation,
-                onSuccess             = { name, _ ->
+                context              = this,
+                url                  = photo.fullUrl,
+                jsIsPortrait         = false,
+                extraRotationDegrees = rotation,
+                onSuccess            = { name, _ ->
                     PhotoHistoryStore.markDownloaded(this, photo.id)
                     Toast.makeText(this, getString(R.string.saved_landscape, name), Toast.LENGTH_SHORT).show()
                 },
@@ -95,8 +97,10 @@ class PhotoViewActivity : AppCompatActivity() {
         }
 
         btnShare.setOnClickListener {
+            val photo    = pagerAdapter.getPhotoAt(photoPager.currentItem)
+            val rotation = pagerAdapter.getManualRotation(photoPager.currentItem)
             PhotoHistoryStore.markShared(this, photo.id)
-            ShareHelper.share(this, photo.fullUrl, fullImage.manualRotation)
+            ShareHelper.share(this, photo.fullUrl, rotation)
         }
     }
 }
