@@ -66,6 +66,7 @@ class GalleryActivity : AppCompatActivity() {
         setContentView(R.layout.activity_gallery)
 
         PhotoHistoryStore.init(this)
+        PhotoRotationStore.init(this)
         toolbar          = findViewById(R.id.toolbar)
         progressBar      = findViewById(R.id.progressBar)
         emptyContainer  = findViewById(R.id.emptyContainer)

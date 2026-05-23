@@ -143,6 +143,8 @@ class PhotoAdapter(
                 placeholder(R.drawable.ic_photos)
                 memoryCachePolicy(CachePolicy.ENABLED)
                 diskCachePolicy(CachePolicy.ENABLED)
+                val degrees = PhotoRotationStore.getRotation(photo.id)
+                if (degrees != 0f) transformations(RotateTransformation(degrees))
             }
 
             if (isSelectMode) {
