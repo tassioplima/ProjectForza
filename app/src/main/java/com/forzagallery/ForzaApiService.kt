@@ -57,7 +57,7 @@ object ForzaApiService {
     suspend fun fetchGallery(mobileUa: String): List<Photo> = withContext(Dispatchers.IO) {
         val cookies = buildCookieHeader()
         val token   = capturedAuthHeader
-        Log.d(TAG, "fetchGallery: hasCookies=${cookies.isNotBlank()} hasToken=${!token.isNullOrBlank()} token=${token?.take(40)}")
+        Log.d(TAG, "fetchGallery: hasCookies=${cookies.isNotBlank()} hasToken=${!token.isNullOrBlank()}")
         if (cookies.isBlank() && token.isNullOrBlank()) throw AuthException()
 
         val conn = (URL(GALLERY_URL).openConnection() as HttpURLConnection).apply {

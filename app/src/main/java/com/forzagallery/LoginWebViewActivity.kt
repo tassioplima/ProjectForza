@@ -49,7 +49,7 @@ class LoginWebViewActivity : AppCompatActivity() {
     private inner class NativeBridge {
         @android.webkit.JavascriptInterface
         fun onToken(authHeader: String) {
-            Log.d(TAG, "NativeBridge.onToken called, length=${authHeader.length}, prefix=${authHeader.take(30)}")
+            Log.d(TAG, "NativeBridge.onToken called, length=${authHeader.length}")
             if (!loginComplete && authHeader.isNotBlank() && authHeader.length >= 20) {
                 ForzaApiService.capturedAuthHeader = authHeader
                 runOnUiThread { completeLogin() }
@@ -290,10 +290,10 @@ class LoginWebViewActivity : AppCompatActivity() {
         Log.d(TAG, "extractMsalToken attempt=$attempt")
         webView.evaluateJavascript(JS_EXTRACT_TOKEN) { rawResult ->
             if (loginComplete) return@evaluateJavascript
-            Log.d(TAG, "JS result attempt=$attempt raw=${rawResult?.take(120)}")
             val token = rawResult
                 ?.trim('"', '\'', ' ')
                 ?.takeIf { it.isNotBlank() && it != "null" && it.length > 50 }
+            Log.d(TAG, "JS result attempt=$attempt found=${token != null}")
 
             if (token != null) {
                 // Got the MSAL Bearer token — token already prefixed by JS.
