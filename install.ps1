@@ -31,8 +31,13 @@ param(
 )
 
 # Self-relaunch with Bypass if execution policy would block us
-if ($PSVersionTable -and -not ($ExecutionContext.SessionState.LanguageMode -eq 'FullLanguage' -and $PSScriptRoot)) {
-    # Running inline; this is fine
+$policy = Get-ExecutionPolicy -Scope Process
+if ($policy -eq 'Restricted' -or $policy -eq 'AllSigned') {
+    Write-Host "Relaunching with ExecutionPolicy Bypass..." -ForegroundColor Yellow
+    $args_ = @('-ExecutionPolicy', 'Bypass', '-File', $MyInvocation.MyCommand.Path)
+    if ($SkipBuild) { $args_ += '-SkipBuild' }
+    & powershell @args_
+    exit $LASTEXITCODE
 }
 
 $ErrorActionPreference = "Stop"

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Photo viewer and gallery action buttons – fixed width so they look
+         centred on any screen size instead of stretching to fill the bar. -->
+    <dimen name="action_button_min_width">80dp</dimen>
+</resources>

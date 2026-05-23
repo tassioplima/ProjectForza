@@ -39,6 +39,9 @@ class LoginWebViewActivity : AppCompatActivity() {
     /** True once the user has been redirected to a Microsoft login page. */
     private var hasSeenMsLogin = false
 
+    /** True once the WebView navigated AWAY from forza.net to the MS OAuth page. */
+    private var hasLeftForzaSite = false
+
     /**
      * JavaScript interface injected into the WebView.
      * Receives Bearer tokens from the fetch/XHR interceptor script.
@@ -100,17 +103,21 @@ class LoginWebViewActivity : AppCompatActivity() {
         /**
          * Scans sessionStorage and localStorage for a Bearer token:
          *  1. URL hash (implicit OAuth: #access_token=...)
-         *  2. MSAL-style key names containing accesstoken
-         *  3. Broad scan for any JWT-shaped value in storage
-         * Returns "Bearer <jwt>" or empty string.
+         *  2. Keys containing auth/token/bearer/accesstoken
+         *  3. Broad scan — JWT-shaped OR opaque (non-JWT) tokens
+         * Returns "Bearer <token>" or empty string.
          */
         private val JS_EXTRACT_TOKEN = """
             (function() {
+                function isToken(t) {
+                    return t && typeof t === 'string' && t.length >= 20
+                        && !t.includes(' ') && !t.includes('<') && !t.includes('{');
+                }
                 try {
                     var hash = window.location.hash;
                     if (hash && hash.indexOf('access_token=') >= 0) {
                         var m = hash.match(/access_token=([^&]+)/);
-                        if (m && m[1] && m[1].length > 50) return 'Bearer ' + decodeURIComponent(m[1]);
+                        if (m && m[1] && isToken(decodeURIComponent(m[1]))) return 'Bearer ' + decodeURIComponent(m[1]);
                     }
                     var stores = [sessionStorage, localStorage];
                     for (var i = 0; i < stores.length; i++) {
@@ -118,11 +125,18 @@ class LoginWebViewActivity : AppCompatActivity() {
                         for (var j = 0; j < s.length; j++) {
                             var k = s.key(j);
                             var kl = (k || '').toLowerCase();
-                            if (kl.indexOf('accesstoken') >= 0 || kl.indexOf('access_token') >= 0) {
+                            if (kl.indexOf('auth') >= 0 || kl.indexOf('token') >= 0 ||
+                                kl.indexOf('bearer') >= 0 || kl.indexOf('accesstoken') >= 0 ||
+                                kl.indexOf('access_token') >= 0) {
                                 try {
-                                    var v = JSON.parse(s.getItem(k));
-                                    var t = v && (v.secret || v.access_token || v.value || v.token || v.credential);
-                                    if (t && typeof t === 'string' && t.split('.').length === 3 && t.length > 50) return 'Bearer ' + t;
+                                    var raw = s.getItem(k);
+                                    if (isToken(raw)) return 'Bearer ' + raw;
+                                    var v = JSON.parse(raw);
+                                    var props = ['secret','access_token','token','value','credential','bearer','accessToken','Authorization'];
+                                    for (var p = 0; p < props.length; p++) {
+                                        var t = v && v[props[p]];
+                                        if (isToken(t)) return 'Bearer ' + t;
+                                    }
                                 } catch(e) {}
                             }
                         }
@@ -132,21 +146,21 @@ class LoginWebViewActivity : AppCompatActivity() {
                         for (var j2 = 0; j2 < s2.length; j2++) {
                             var k2 = s2.key(j2);
                             try {
-                                var raw = s2.getItem(k2);
-                                if (!raw) continue;
-                                if (raw.split('.').length === 3 && raw.length > 100 && !/[\s{]/.test(raw)) return 'Bearer ' + raw;
-                                var v2 = JSON.parse(raw);
+                                var raw2 = s2.getItem(k2);
+                                if (!raw2) continue;
+                                if (isToken(raw2) && raw2.length > 20) return 'Bearer ' + raw2;
+                                var v2 = JSON.parse(raw2);
                                 if (v2 && typeof v2 === 'object') {
-                                    var props = ['secret','access_token','token','value','credential','bearer','accessToken'];
-                                    for (var p = 0; p < props.length; p++) {
-                                        var t2 = v2[props[p]];
-                                        if (t2 && typeof t2 === 'string' && t2.split('.').length === 3 && t2.length > 100) return 'Bearer ' + t2;
+                                    var props2 = ['secret','access_token','token','value','credential','bearer','accessToken'];
+                                    for (var p2 = 0; p2 < props2.length; p2++) {
+                                        var t2 = v2[props2[p2]];
+                                        if (isToken(t2) && t2.length > 20) return 'Bearer ' + t2;
                                     }
                                 }
-                            } catch(e) {}
+                            } catch(e2) {}
                         }
                     }
-                } catch(e2) {}
+                } catch(e3) {}
                 return '';
             })();
         """.trimIndent()
@@ -191,7 +205,14 @@ class LoginWebViewActivity : AppCompatActivity() {
                 val lc = url.lowercase()
                 if (lc.contains("microsoftonline") || lc.contains("login.live.com") || lc.contains("login.microsoft")) {
                     hasSeenMsLogin = true
+                    hasLeftForzaSite = true
                     Log.d(TAG, "hasSeenMsLogin = true")
+                } else if (!isOnForzaSite(url)) {
+                    hasLeftForzaSite = true
+                }
+                // Inject interceptor early on forza.net so API calls during page load are caught
+                if (isOnForzaSite(url)) {
+                    view.evaluateJavascript(JS_SETUP_INTERCEPTOR, null)
                 }
             }
 
@@ -203,9 +224,8 @@ class LoginWebViewActivity : AppCompatActivity() {
                     // from the page is caught immediately via NativeBridge.
                     view.evaluateJavascript(JS_SETUP_INTERCEPTOR, null)
                 }
-                if (!loginComplete && hasSeenMsLogin && isOnForzaSite(url)) {
-                    // Also scan storage after a short delay to let MSAL finish
-                    // the async token-cache write.
+                if (!loginComplete && hasSeenMsLogin && hasLeftForzaSite && isOnForzaSite(url)) {
+                    // Returned to forza.net after MS OAuth — scan storage for token.
                     webView.postDelayed({ extractMsalToken(attempt = 1) }, 1500)
                 }
             }
@@ -283,9 +303,11 @@ class LoginWebViewActivity : AppCompatActivity() {
                 // Not ready yet — retry every 2 s (up to 12 s total).
                 webView.postDelayed({ extractMsalToken(attempt + 1) }, 2000)
             } else {
-                // Give up — NativeBridge may have already set capturedAuthHeader
-                // via fetch/XHR interception; completeLogin will use it.
-                completeLogin()
+                // Storage scan exhausted with no token — the Forza token is opaque
+                // (not a JWT) so it may only be in memory, not storage.
+                // Keep the WebView open and rely on the fetch interceptor to fire
+                // when the page makes an authenticated API call.
+                Log.d(TAG, "extractMsalToken exhausted — keeping WebView open, waiting for fetch interceptor")
             }
         }
     }

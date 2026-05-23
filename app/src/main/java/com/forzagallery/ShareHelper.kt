@@ -3,6 +3,9 @@ package com.forzagallery
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.net.Uri
 import android.widget.Toast
 import androidx.core.content.FileProvider
@@ -11,6 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileOutputStream
 
 /**
  * Downloads a Forza photo to the app's private cache and opens the system
@@ -35,10 +39,12 @@ object ShareHelper {
     )
 
     /**
-     * @param activity  The calling Activity (used for context + startActivity).
-     * @param url       Full HTTPS URL of the photo to share.
+     * @param activity             The calling Activity (used for context + startActivity).
+     * @param url                  Full HTTPS URL of the photo to share.
+     * @param extraRotationDegrees Additional clockwise rotation to apply before sharing
+     *                             (matches the rotation shown in the full-screen viewer).
      */
-    fun share(activity: Activity, url: String) {
+    fun share(activity: Activity, url: String, extraRotationDegrees: Float = 0f) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 // Download raw bytes (uses session cookies, same as DownloadHelper)
@@ -48,7 +54,23 @@ object ShareHelper {
                 // Write to a private cache folder — never exposed to the public gallery
                 val cacheDir = File(activity.cacheDir, "share").also { it.mkdirs() }
                 val file     = File(cacheDir, fileName)
-                file.writeBytes(bytes)
+
+                if (extraRotationDegrees != 0f) {
+                    // Decode, rotate, re-encode so the shared image matches what user sees
+                    var bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    val matrix = Matrix().apply { postRotate(extraRotationDegrees) }
+                    val rotated = Bitmap.createBitmap(
+                        bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true
+                    )
+                    bitmap.recycle()
+                    bitmap = rotated
+                    FileOutputStream(file).use { fos ->
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 95, fos)
+                    }
+                    bitmap.recycle()
+                } else {
+                    file.writeBytes(bytes)
+                }
 
                 // FileProvider converts the private path to a grantable content URI
                 val contentUri: Uri = FileProvider.getUriForFile(

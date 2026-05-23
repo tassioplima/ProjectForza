@@ -34,16 +34,19 @@ import java.net.URL
 object DownloadHelper {
 
     /**
-     * @param url           Full HTTPS URL of the photo.
-     * @param jsIsPortrait  Orientation hint from JavaScript (naturalHeight > naturalWidth).
-     *                      Used only when no EXIF data is present.
-     * @param onSuccess     Called on the main thread with (fileName, isPortrait).
-     * @param onError       Called on the main thread with an error message.
+     * @param url                  Full HTTPS URL of the photo.
+     * @param jsIsPortrait         Orientation hint from JavaScript (naturalHeight > naturalWidth).
+     *                             Used only when no EXIF data is present.
+     * @param extraRotationDegrees Additional clockwise rotation to apply on top of EXIF correction
+     *                             (e.g. 90, 180, 270 from the user rotating the image in the viewer).
+     * @param onSuccess            Called on the main thread with (fileName, isPortrait).
+     * @param onError              Called on the main thread with an error message.
      */
     fun downloadWithOrientationFix(
         context: Context,
         url: String,
         jsIsPortrait: Boolean,
+        extraRotationDegrees: Float = 0f,
         onSuccess: (fileName: String, isPortrait: Boolean) -> Unit,
         onError: (message: String) -> Unit
     ) {
@@ -59,16 +62,16 @@ object DownloadHelper {
                 var bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                     ?: throw IllegalStateException("Não foi possível descodificar a imagem.")
 
-                // 4. Apply rotation if EXIF says the image is stored rotated
+                // 4. Apply EXIF rotation + any extra manual rotation from the viewer
+                val totalRotation = exifDegrees + extraRotationDegrees
                 val finalIsPortrait: Boolean
-                if (exifDegrees != 0f) {
-                    val matrix = Matrix().apply { postRotate(exifDegrees) }
+                if (totalRotation != 0f) {
+                    val matrix = Matrix().apply { postRotate(totalRotation) }
                     val rotated = Bitmap.createBitmap(
                         bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true
                     )
                     bitmap.recycle()
                     bitmap = rotated
-                    // After rotation, re-check portrait/landscape from actual dimensions
                     finalIsPortrait = bitmap.height > bitmap.width
                 } else {
                     // No EXIF rotation — trust JS hint or raw dimensions

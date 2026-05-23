@@ -18,15 +18,39 @@
         android:contentDescription="@string/photo_desc"
         android:background="?attr/colorSurfaceVariant" />
 
-    <!-- Semi-transparent bottom overlay with action buttons -->
+    <!-- Selection dim overlay: only visible when the item is selected -->
+    <View
+        android:id="@+id/selectionOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#660066FF"
+        android:visibility="gone" />
+
+    <!-- Selection circle (top-right): hidden unless in select mode -->
+    <ImageView
+        android:id="@+id/selectionIcon"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="4dp"
+        android:contentDescription="@null"
+        android:visibility="gone" />
+
+    <!-- Bottom action bar.
+         clickable + focusable = TRUE so the touch is consumed HERE
+         and does NOT bubble up to photoImage, preventing accidental opens. -->
     <LinearLayout
+        android:id="@+id/bottomBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
         android:background="#BB000000"
         android:orientation="horizontal"
         android:paddingVertical="2dp"
-        android:baselineAligned="false">
+        android:baselineAligned="false"
+        android:clickable="true"
+        android:focusable="true">
 
         <!-- Download button -->
         <com.google.android.material.button.MaterialButton
