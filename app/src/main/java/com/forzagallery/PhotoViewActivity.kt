@@ -63,6 +63,7 @@ class PhotoViewActivity : AppCompatActivity() {
 
         val pagerAdapter = PhotoPagerAdapter(photos)
         photoPager.adapter = pagerAdapter
+        photoPager.offscreenPageLimit = 2   // pre-render 2 pages on each side
         photoPager.setCurrentItem(initialIdx, false)
 
         // Show "current / total" counter in the toolbar

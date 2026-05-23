@@ -15,6 +15,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import coil.imageLoader
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.progressindicator.CircularProgressIndicator
@@ -49,13 +52,22 @@ class GalleryActivity : AppCompatActivity() {
     private lateinit var adapter: PhotoAdapter
 
     private var isSelectMode = false
-    private var isFirstLoad = true
+    private var isFirstLoad  = true
+
+    // ── Pagination ────────────────────────────────────────────────────────────
+    /** Full photo list fetched from the API (never trimmed). */
+    private val allPhotos     = mutableListOf<Photo>()
+    private var currentPage   = 1
+    private var isLoadingPage = false
 
     companion object {
         private const val MOBILE_UA =
             "Mozilla/5.0 (Linux; Android 13; Pixel 7 Pro) " +
             "AppleWebKit/537.36 (KHTML, like Gecko) " +
             "Chrome/124.0.0.0 Mobile Safari/537.36"
+
+        /** Photos shown per page in the gallery grid. */
+        private const val PAGE_SIZE = 10
 
         /** Bottom padding added to the RecyclerView while the batch bar is visible (~64 dp). */
         private const val BATCH_BAR_PADDING_DP = 64
@@ -84,8 +96,10 @@ class GalleryActivity : AppCompatActivity() {
         // ── Adapter ───────────────────────────────────────────────────────────
         adapter = PhotoAdapter(
             onOpen = { photo ->
-                val index = adapter.currentList.indexOfFirst { it.id == photo.id }
-                PhotoSessionStore.currentPhotos = adapter.currentList
+                // Use the full list so viewer can swipe through all photos,
+                // even those not yet shown in the current page.
+                val index = allPhotos.indexOfFirst { it.id == photo.id }
+                PhotoSessionStore.currentPhotos = allPhotos.toList()
                 PhotoViewActivity.start(this, index.coerceAtLeast(0))
             },
             onDownload = { photo ->
@@ -123,6 +137,18 @@ class GalleryActivity : AppCompatActivity() {
         recyclerView.layoutManager =
             StaggeredGridLayoutManager(galleryColumns, StaggeredGridLayoutManager.VERTICAL)
         recyclerView.adapter = adapter
+        recyclerView.setItemViewCacheSize(PAGE_SIZE * 2)
+
+        // Auto-load next page when user scrolls near the bottom
+        recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) {
+                if (dy <= 0 || isLoadingPage) return
+                val lm = rv.layoutManager as StaggeredGridLayoutManager
+                val pos = IntArray(lm.spanCount)
+                lm.findLastVisibleItemPositions(pos)
+                if (pos.max() >= adapter.itemCount - PAGE_SIZE) loadNextPage()
+            }
+        })
 
         swipeRefresh.setColorSchemeResources(com.google.android.material.R.color.m3_ref_palette_primary40)
         swipeRefresh.setOnRefreshListener { loadGallery(isRefresh = true) }
@@ -207,11 +233,8 @@ class GalleryActivity : AppCompatActivity() {
         adapter.exitSelectMode()
         toolbar.navigationIcon = null
         toolbar.setNavigationOnClickListener(null)
-        supportActionBar?.title    = getString(R.string.gallery_title)
-        supportActionBar?.subtitle =
-            if (adapter.currentList.isNotEmpty())
-                getString(R.string.gallery_count, adapter.currentList.size)
-            else null
+        supportActionBar?.title = getString(R.string.gallery_title)
+        updatePageSubtitle()
         batchBar.visibility    = View.GONE
         swipeRefresh.isEnabled = true
         recyclerView.setPadding(
@@ -356,8 +379,56 @@ class GalleryActivity : AppCompatActivity() {
         progressBar.visibility    = View.GONE
         emptyContainer.visibility = View.GONE
         swipeRefresh.visibility   = View.VISIBLE
-        supportActionBar?.subtitle = getString(R.string.gallery_count, photos.size)
-        adapter.submitList(photos)
+
+        allPhotos.clear()
+        allPhotos.addAll(photos)
+        currentPage   = 1
+        isLoadingPage = false
+
+        val firstPage = photos.take(PAGE_SIZE)
+        adapter.submitList(firstPage)
+        updatePageSubtitle()
+
+        // Pre-fetch next page thumbnails so they appear instantly when scrolled into view
+        prefetchThumbnails(photos.drop(PAGE_SIZE).take(PAGE_SIZE))
+    }
+
+    private fun loadNextPage() {
+        val nextPage  = currentPage + 1
+        val nextItems = allPhotos.take(nextPage * PAGE_SIZE)
+        if (nextItems.size <= adapter.itemCount) return  // nothing new
+        isLoadingPage = true
+        adapter.submitList(nextItems) {
+            currentPage   = nextPage
+            isLoadingPage = false
+            updatePageSubtitle()
+            prefetchThumbnails(allPhotos.drop(nextPage * PAGE_SIZE).take(PAGE_SIZE))
+        }
+    }
+
+    private fun updatePageSubtitle() {
+        if (isSelectMode) return
+        val shown = minOf(currentPage * PAGE_SIZE, allPhotos.size)
+        supportActionBar?.subtitle =
+            if (shown < allPhotos.size)
+                getString(R.string.gallery_count_paged, shown, allPhotos.size)
+            else
+                getString(R.string.gallery_count, allPhotos.size)
+    }
+
+    /** Enqueues thumbnail downloads into Coil's cache so they're ready before the view binds. */
+    private fun prefetchThumbnails(photos: List<Photo>) {
+        if (photos.isEmpty()) return
+        val loader = applicationContext.imageLoader
+        photos.forEach { photo ->
+            loader.enqueue(
+                ImageRequest.Builder(applicationContext)
+                    .data(photo.thumbnailUrl)
+                    .memoryCachePolicy(CachePolicy.ENABLED)
+                    .diskCachePolicy(CachePolicy.ENABLED)
+                    .build()
+            )
+        }
     }
 
     private fun showEmpty(message: String, forLogin: Boolean) {

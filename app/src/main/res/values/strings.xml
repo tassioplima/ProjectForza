@@ -27,6 +27,7 @@
     <string name="gallery_reload">Recarregar</string>
     <string name="gallery_retry">Tentar novamente</string>
     <string name="gallery_count">%1$d fotos</string>
+    <string name="gallery_count_paged">%1$d de %2$d fotos</string>
     <string name="gallery_session_expired">Sessão expirada.\nInicia sessão novamente para continuar.</string>
     <string name="gallery_error">Erro ao carregar fotos:\n%1$s</string>
     <string name="gallery_error_unknown">Erro desconhecido</string>
