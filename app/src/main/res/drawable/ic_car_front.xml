@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+
+    <!-- Car body outline (main silhouette) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="
+            M18,62
+            L14,55 L14,45 L20,38
+            L30,30 L70,30
+            L80,38 L86,45 L86,55
+            L82,62
+            Z" />
+
+    <!-- Windshield (dark glass) -->
+    <path
+        android:fillColor="#BBDEFB"
+        android:pathData="
+            M32,32 L68,32
+            L76,40 L76,52
+            L24,52 L24,40
+            Z" />
+
+    <!-- Hood / bonnet area (slightly darker) -->
+    <path
+        android:fillColor="#E3F2FD"
+        android:pathData="
+            M24,52 L76,52 L80,58 L20,58
+            Z" />
+
+    <!-- Bumper bottom -->
+    <path
+        android:fillColor="#CFD8DC"
+        android:pathData="
+            M20,62 L80,62 L82,66 L18,66
+            Z" />
+
+    <!-- Left headlight -->
+    <path
+        android:fillColor="#FFF9C4"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1"
+        android:pathData="
+            M17,48 Q15,44 17,42
+            L24,42 L24,52 L18,52
+            Z" />
+
+    <!-- Right headlight -->
+    <path
+        android:fillColor="#FFF9C4"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1"
+        android:pathData="
+            M83,48 Q85,44 83,42
+            L76,42 L76,52 L82,52
+            Z" />
+
+    <!-- Left headlight inner glow -->
+    <path
+        android:fillColor="#FFE082"
+        android:pathData="M19,49 Q18,46 19,44 L23,44 L23,50 L19,50 Z" />
+
+    <!-- Right headlight inner glow -->
+    <path
+        android:fillColor="#FFE082"
+        android:pathData="M81,49 Q82,46 81,44 L77,44 L77,50 L81,50 Z" />
+
+    <!-- Grille center horizontal bar -->
+    <path
+        android:fillColor="#B0BEC5"
+        android:pathData="M30,56 L70,56 L71,58 L29,58 Z" />
+
+    <!-- Grille left slot -->
+    <path
+        android:fillColor="#90A4AE"
+        android:pathData="M32,59 L44,59 L44,61 L32,61 Z" />
+
+    <!-- Grille center slot -->
+    <path
+        android:fillColor="#90A4AE"
+        android:pathData="M46,59 L54,59 L54,61 L46,61 Z" />
+
+    <!-- Grille right slot -->
+    <path
+        android:fillColor="#90A4AE"
+        android:pathData="M56,59 L68,59 L68,61 L56,61 Z" />
+
+    <!-- License plate area -->
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M38,62 L62,62 L62,65 L38,65 Z" />
+
+    <!-- Car body outline stroke -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#BBDEFB"
+        android:strokeWidth="1.5"
+        android:pathData="
+            M18,62
+            L14,55 L14,45 L20,38
+            L30,30 L70,30
+            L80,38 L86,45 L86,55
+            L82,62
+            Z" />
+
+    <!-- Left wheel arch -->
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M14,60 Q14,70 22,70 Q30,70 30,60 Z" />
+
+    <!-- Right wheel arch -->
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M86,60 Q86,70 78,70 Q70,70 70,60 Z" />
+
+    <!-- Left wheel -->
+    <path
+        android:fillColor="#263238"
+        android:pathData="M16,66 A7,5 0 1 0 30,66 A7,5 0 1 0 16,66 Z" />
+
+    <!-- Right wheel -->
+    <path
+        android:fillColor="#263238"
+        android:pathData="M70,66 A7,5 0 1 0 84,66 A7,5 0 1 0 70,66 Z" />
+
+    <!-- Left wheel rim -->
+    <path
+        android:fillColor="#90A4AE"
+        android:pathData="M19,66 A4,3 0 1 0 27,66 A4,3 0 1 0 19,66 Z" />
+
+    <!-- Right wheel rim -->
+    <path
+        android:fillColor="#90A4AE"
+        android:pathData="M73,66 A4,3 0 1 0 81,66 A4,3 0 1 0 73,66 Z" />
+
+</vector>
