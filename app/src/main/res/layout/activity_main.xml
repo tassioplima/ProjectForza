@@ -1,118 +1,88 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Material Design 3 layout
-  ┌──────────────────────────────┐
-  │  MaterialToolbar (TopAppBar) │
-  │  LinearProgressIndicator     │
-  ├──────────────────────────────┤
-  │         WebView              │
-  ├──────────────────────────────┤
-  │  ← Home ↺ Galeria           │  ← M3 IconButton row
-  └──────────────────────────────┘
+  Login / splash screen — shown until the user has a valid Forza session.
+  Layout: full-screen Forza-Blue background, centered branding group,
+          "Entrar com Microsoft" button and a loading indicator.
 -->
-<LinearLayout
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:background="@color/md_theme_light_primary"
+    android:fitsSystemWindows="true">
 
-    <!-- ── Top App Bar (M3 Small Top App Bar) ──────────────────────────── -->
-    <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/appBarLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:fitsSystemWindows="true"
-        app:liftOnScroll="false">
-
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            app:title="@string/app_name"
-            app:subtitle="@string/toolbar_subtitle_default"
-            app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge"
-            app:subtitleTextAppearance="@style/TextAppearance.Material3.BodySmall" />
-
-    </com.google.android.material.appbar.AppBarLayout>
-
-    <!-- ── Page loading indicator (M3 LinearProgressIndicator) ──────────── -->
-    <com.google.android.material.progressindicator.LinearProgressIndicator
-        android:id="@+id/progressBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:indeterminate="false"
-        android:max="100"
-        android:visibility="gone"
-        app:trackCornerRadius="0dp"
-        app:indicatorColor="?attr/colorPrimary"
-        app:trackColor="?attr/colorSurfaceVariant" />
-
-    <!-- ── WebView ───────────────────────────────────────────────────────── -->
-    <WebView
-        android:id="@+id/webView"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
-
-    <!-- ── Bottom navigation bar (M3 Surface + IconButton pattern) ────────
-         MaterialButton with Widget.Material3.Button.IconButton style
-         provides correct touch targets (48dp), ripple, and tonal icon tint.
-    -->
+    <!-- ── Branding (logo + titles) ────────────────────────────────────── -->
     <LinearLayout
-        android:id="@+id/bottomBar"
-        android:layout_width="match_parent"
+        android:id="@+id/brandingGroup"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:background="?attr/colorSurface"
-        android:elevation="3dp"
-        android:paddingTop="4dp"
-        android:paddingBottom="4dp">
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toTopOf="@+id/loginButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.42"
+        app:layout_constraintVertical_chainStyle="packed">
 
-        <!-- Back -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnBack"
-            style="@style/Widget.Material3.Button.IconButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:minWidth="0dp"
-            android:contentDescription="@string/btn_back"
-            app:icon="@drawable/ic_arrow_back" />
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:contentDescription="@null"
+            android:scaleType="fitCenter"
+            app:srcCompat="@drawable/ic_launcher_foreground" />
 
-        <!-- myForza home -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnHome"
-            style="@style/Widget.Material3.Button.IconButton"
-            android:layout_width="0dp"
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:minWidth="0dp"
-            android:contentDescription="@string/btn_home"
-            app:icon="@drawable/ic_home" />
+            android:layout_marginTop="12dp"
+            android:text="@string/app_name"
+            android:textAppearance="?attr/textAppearanceDisplaySmall"
+            android:textColor="@android:color/white"
+            android:fontFamily="sans-serif-medium" />
 
-        <!-- Refresh page -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnRefresh"
-            style="@style/Widget.Material3.Button.IconButton"
-            android:layout_width="0dp"
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:minWidth="0dp"
-            android:contentDescription="@string/btn_refresh"
-            app:icon="@drawable/ic_refresh" />
-
-        <!-- Open local saved gallery -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnGallery"
-            style="@style/Widget.Material3.Button.IconButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:minWidth="0dp"
-            android:contentDescription="@string/btn_gallery"
-            app:icon="@drawable/ic_photos" />
+            android:layout_marginTop="6dp"
+            android:gravity="center"
+            android:text="@string/login_subtitle"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="#BBDEFB" />
 
     </LinearLayout>
 
-</LinearLayout>
+    <!-- ── "Entrar com Microsoft" button ───────────────────────────────── -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/loginButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="48dp"
+        android:backgroundTint="@android:color/white"
+        android:paddingStart="28dp"
+        android:paddingEnd="28dp"
+        android:text="@string/login_button"
+        android:textColor="@color/md_theme_light_primary"
+        app:icon="@drawable/ic_microsoft"
+        app:iconTint="@null"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/brandingGroup" />
+
+    <!-- ── Loading indicator (shown while auto-checking session) ────────── -->
+    <com.google.android.material.progressindicator.CircularProgressIndicator
+        android:id="@+id/loginProgress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="28dp"
+        android:indeterminate="true"
+        android:visibility="gone"
+        app:indicatorColor="@android:color/white"
+        app:indicatorSize="40dp"
+        app:trackColor="#33FFFFFF"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/loginButton" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

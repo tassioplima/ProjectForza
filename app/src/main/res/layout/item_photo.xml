@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Square photo cell for the 3-column grid in GalleryActivity.
+     Height is set programmatically to equal width (PhotoAdapter.onCreateViewHolder). -->
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="1dp">
+
+    <!-- Photo thumbnail fills the square cell -->
+    <ImageView
+        android:id="@+id/photoImage"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:contentDescription="@string/photo_desc"
+        android:background="?attr/colorSurfaceVariant" />
+
+    <!-- Semi-transparent bottom overlay with action buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="#BB000000"
+        android:orientation="horizontal"
+        android:paddingVertical="2dp"
+        android:baselineAligned="false">
+
+        <!-- Download button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDownload"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="0dp"
+            android:layout_height="30dp"
+            android:layout_weight="1"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:paddingHorizontal="0dp"
+            app:icon="@drawable/ic_download"
+            app:iconSize="16dp"
+            app:iconTint="@android:color/white"
+            android:contentDescription="@string/download_hint" />
+
+        <!-- Share button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnShare"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="0dp"
+            android:layout_height="30dp"
+            android:layout_weight="1"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:paddingHorizontal="0dp"
+            app:icon="@drawable/ic_share_photo"
+            app:iconSize="16dp"
+            app:iconTint="@android:color/white"
+            android:contentDescription="@string/share_via" />
+
+    </LinearLayout>
+
+</FrameLayout>

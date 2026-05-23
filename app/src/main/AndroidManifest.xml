@@ -28,6 +28,19 @@
             </intent-filter>
         </activity>
 
+        <!-- OAuth login WebView — only shown when no session cookies are present -->
+        <activity
+            android:name=".LoginWebViewActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboard|keyboardHidden|uiMode"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Native Forza photo gallery -->
+        <activity
+            android:name=".GalleryActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|uiMode" />
+
         <!-- FileProvider: exposes cached share files to other apps via content:// URI -->
         <provider
             android:name="androidx.core.content.FileProvider"

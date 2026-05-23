@@ -74,4 +74,5 @@ class ForzaJsInterface(private val activity: Activity) {
         }
         ShareHelper.share(activity, url)
     }
+
 }

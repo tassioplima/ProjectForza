@@ -13,4 +13,24 @@
     <string name="download_error">Erro ao guardar: %1$s</string>
     <string name="share_via">Partilhar foto via…</string>
     <string name="share_error">Erro ao partilhar: %1$s</string>
+    <!-- Login screen -->
+    <string name="login_subtitle">Os meus screenshots Forza Horizon</string>
+    <string name="login_button">Entrar com Microsoft</string>
+    <string name="login_title">Iniciar sessão</string>
+    <string name="login_again">Iniciar sessão</string>
+    <string name="btn_cancel">Cancelar</string>
+
+    <!-- Native gallery screen -->
+    <string name="gallery_title">As minhas fotos Forza</string>
+    <string name="gallery_empty">Sem fotos na galeria\nAs tuas fotografias aparecerão aqui.</string>
+    <string name="gallery_empty_no_photos">Sem fotos encontradas.\nTenta deslizar para atualizar.</string>
+    <string name="gallery_reload">Recarregar</string>
+    <string name="gallery_retry">Tentar novamente</string>
+    <string name="gallery_count">%1$d fotos</string>
+    <string name="gallery_session_expired">Sessão expirada.\nInicia sessão novamente para continuar.</string>
+    <string name="gallery_error">Erro ao carregar fotos:\n%1$s</string>
+    <string name="gallery_error_unknown">Erro desconhecido</string>
+    <string name="action_logout">Terminar sessão</string>
+    <string name="photo_desc">Screenshot Forza</string>
+    <string name="download_hint">Guardar foto</string>
 </resources>
