@@ -37,37 +37,41 @@
         android:contentDescription="@null"
         android:visibility="gone" />
 
-    <!-- Status badges (top-left): tiny icons showing download/share history.
-         Container is GONE until at least one badge is visible. -->
+    <!-- Status badges (top-left): colored circles — green = downloaded, blue = shared. -->
     <LinearLayout
         android:id="@+id/statusBadges"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|start"
-        android:layout_margin="4dp"
-        android:background="#99000000"
+        android:layout_margin="5dp"
         android:orientation="horizontal"
-        android:paddingHorizontal="4dp"
-        android:paddingVertical="3dp"
         android:visibility="gone">
 
+        <!-- Green circle: photo was saved to device -->
         <ImageView
             android:id="@+id/badgeDownloaded"
-            android:layout_width="12dp"
-            android:layout_height="12dp"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
             android:src="@drawable/ic_download"
-            android:tint="@android:color/white"
+            android:tint="#FFFFFFFF"
+            android:background="@drawable/bg_badge"
+            android:backgroundTint="#DD2E7D32"
+            android:padding="3dp"
             android:contentDescription="@null"
             android:visibility="gone" />
 
+        <!-- Blue circle: photo was shared -->
         <ImageView
             android:id="@+id/badgeShared"
-            android:layout_width="12dp"
-            android:layout_height="12dp"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
             android:src="@drawable/ic_share_photo"
-            android:tint="@android:color/white"
+            android:tint="#FFFFFFFF"
+            android:background="@drawable/bg_badge"
+            android:backgroundTint="#DD1565C0"
+            android:padding="3dp"
             android:contentDescription="@null"
-            android:layout_marginStart="2dp"
+            android:layout_marginStart="4dp"
             android:visibility="gone" />
 
     </LinearLayout>
