@@ -114,8 +114,8 @@ class TouchImageView @JvmOverloads constructor(
     }
 
     /** Resets rotation and zoom to the default fit-center state. */
-    fun resetTransform() {
-        manualRotation = 0f
+    fun resetTransform(initialRotation: Float = 0f) {
+        manualRotation = initialRotation
         currentZoom = 1f
         post { initMatrix() }
     }

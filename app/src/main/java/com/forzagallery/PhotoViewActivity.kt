@@ -50,6 +50,7 @@ class PhotoViewActivity : AppCompatActivity() {
         val initialIdx = rawIndex.coerceIn(0, photos.size - 1)
 
         PhotoHistoryStore.init(this)
+        PhotoRotationStore.init(this)
 
         val toolbar     = findViewById<MaterialToolbar>(R.id.toolbar)
         val photoPager  = findViewById<ViewPager2>(R.id.photoPager)
@@ -75,7 +76,10 @@ class PhotoViewActivity : AppCompatActivity() {
         })
 
         btnRotate.setOnClickListener {
-            pagerAdapter.rotateCurrent(photoPager.currentItem)
+            val pos = photoPager.currentItem
+            pagerAdapter.rotateCurrent(pos)
+            PhotoRotationStore.setRotation(this, pagerAdapter.getPhotoAt(pos).id,
+                pagerAdapter.getManualRotation(pos))
         }
 
         btnDownload.setOnClickListener {

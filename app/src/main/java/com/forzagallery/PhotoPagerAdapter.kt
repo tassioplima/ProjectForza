@@ -53,8 +53,8 @@ class PhotoPagerAdapter(
         private val progressBar: CircularProgressIndicator = view.findViewById(R.id.pageProgress)
 
         fun bind(photo: Photo) {
-            // Reset rotation/zoom that may linger from a recycled holder
-            touchImageView.resetTransform()
+            // Apply saved rotation (or 0° if none) before loading the image
+            touchImageView.resetTransform(PhotoRotationStore.getRotation(photo.id))
             touchImageView.load(photo.fullUrl) {
                 crossfade(true)
                 placeholder(R.drawable.ic_photos)
