@@ -1,5 +1,6 @@
 package com.forzagallery
 
+import android.util.Log
 import android.webkit.CookieManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -22,6 +23,7 @@ class AuthException(message: String = "Sessão expirada – inicia sessão novam
  */
 object ForzaApiService {
 
+    private const val TAG = "FZG_Api"
     private const val GALLERY_URL = "https://api.forza.net/api/v4/me/gallery/FH6"
 
     /**
@@ -32,11 +34,13 @@ object ForzaApiService {
     var capturedAuthHeader: String? = null
 
     private val FULL_URL_FIELDS = listOf(
+        "photoCdnPath", "screenshotCdnPath", "imageCdnPath", "cdnPath",
         "screenshotUri", "screenshotUrl", "photoUri", "photoUrl",
         "originalUri", "originalUrl", "fullUri", "fullUrl",
         "imageUri", "imageUrl", "contentUri", "mediaUri", "uri", "url"
     )
     private val THUMB_URL_FIELDS = listOf(
+        "thumbnailCdnPath", "thumbCdnPath", "previewCdnPath",
         "thumbnailUri", "thumbnailUrl", "thumbUri", "thumbUrl",
         "previewUri", "previewUrl", "smallUri", "smallUrl"
     )
@@ -53,6 +57,7 @@ object ForzaApiService {
     suspend fun fetchGallery(mobileUa: String): List<Photo> = withContext(Dispatchers.IO) {
         val cookies = buildCookieHeader()
         val token   = capturedAuthHeader
+        Log.d(TAG, "fetchGallery: hasCookies=${cookies.isNotBlank()} hasToken=${!token.isNullOrBlank()} token=${token?.take(40)}")
         if (cookies.isBlank() && token.isNullOrBlank()) throw AuthException()
 
         val conn = (URL(GALLERY_URL).openConnection() as HttpURLConnection).apply {
@@ -68,10 +73,18 @@ object ForzaApiService {
             connect()
         }
         try {
-            when (conn.responseCode) {
-                200       -> parsePhotos(conn.inputStream.bufferedReader().readText())
-                401, 403  -> throw AuthException()
-                else      -> throw IOException("HTTP ${conn.responseCode}")
+            val code = conn.responseCode
+            Log.d(TAG, "fetchGallery: HTTP $code")
+            when (code) {
+                200 -> {
+                    val body = conn.inputStream.bufferedReader().readText()
+                    Log.d(TAG, "fetchGallery: body[0..300]=${body.take(300)}")
+                    val photos = parsePhotos(body)
+                    Log.d(TAG, "fetchGallery: parsed ${photos.size} photos")
+                    photos
+                }
+                401, 403 -> throw AuthException()
+                else     -> throw IOException("HTTP $code")
             }
         } finally {
             conn.disconnect()

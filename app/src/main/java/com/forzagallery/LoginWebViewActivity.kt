@@ -3,6 +3,7 @@
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
@@ -35,7 +36,26 @@ class LoginWebViewActivity : AppCompatActivity() {
     /** Guard so we only call finish() once. */
     private var loginComplete = false
 
+    /** True once the user has been redirected to a Microsoft login page. */
+    private var hasSeenMsLogin = false
+
+    /**
+     * JavaScript interface injected into the WebView.
+     * Receives Bearer tokens from the fetch/XHR interceptor script.
+     */
+    private inner class NativeBridge {
+        @android.webkit.JavascriptInterface
+        fun onToken(authHeader: String) {
+            Log.d(TAG, "NativeBridge.onToken called, length=${authHeader.length}, prefix=${authHeader.take(30)}")
+            if (!loginComplete && authHeader.isNotBlank() && authHeader.length >= 20) {
+                ForzaApiService.capturedAuthHeader = authHeader
+                runOnUiThread { completeLogin() }
+            }
+        }
+    }
+
     companion object {
+        private const val TAG = "FZG_Login"
         private const val LOGIN_URL = "https://forza.net/myforza"
 
         // Desktop UA gives a more stable OAuth flow than mobile on some tenants.
@@ -51,28 +71,79 @@ class LoginWebViewActivity : AppCompatActivity() {
         )
 
         /**
-         * JavaScript that searches sessionStorage and localStorage for an MSAL
-         * access-token entry and returns the raw JWT string (or empty string).
-         *
-         * MSAL Browser v2 stores tokens with keys ending in "-accesstoken-â€¦"
-         * and the value is a JSON object whose [secret] field holds the JWT.
+         * Injected into every forza.net page on load.
+         * Wraps fetch and XHR so any Authorization: Bearer header is sent to
+         * [NativeBridge.onToken] immediately, before we even look at storage.
+         */
+        private val JS_SETUP_INTERCEPTOR = """
+            (function() {
+                if (window.__fgIntercepted) return;
+                window.__fgIntercepted = true;
+                function send(a) { try { window.NativeBridge.onToken(a); } catch(e) {} }
+                var oF = window.fetch;
+                if (oF) window.fetch = function(r, o) {
+                    try {
+                        var h = (o || {}).headers || {};
+                        var a = (h instanceof Headers) ? h.get('Authorization') : (h['Authorization'] || h['authorization'] || '');
+                        if (a && a.indexOf('Bearer ') === 0) send(a);
+                    } catch(e) {}
+                    return oF.apply(this, arguments);
+                };
+                var oS = XMLHttpRequest.prototype.setRequestHeader;
+                XMLHttpRequest.prototype.setRequestHeader = function(n, v) {
+                    if ((n || '').toLowerCase() === 'authorization' && (v || '').indexOf('Bearer ') === 0) send(v);
+                    return oS.apply(this, arguments);
+                };
+            })();
+        """.trimIndent()
+
+        /**
+         * Scans sessionStorage and localStorage for a Bearer token:
+         *  1. URL hash (implicit OAuth: #access_token=...)
+         *  2. MSAL-style key names containing accesstoken
+         *  3. Broad scan for any JWT-shaped value in storage
+         * Returns "Bearer <jwt>" or empty string.
          */
         private val JS_EXTRACT_TOKEN = """
             (function() {
                 try {
+                    var hash = window.location.hash;
+                    if (hash && hash.indexOf('access_token=') >= 0) {
+                        var m = hash.match(/access_token=([^&]+)/);
+                        if (m && m[1] && m[1].length > 50) return 'Bearer ' + decodeURIComponent(m[1]);
+                    }
                     var stores = [sessionStorage, localStorage];
                     for (var i = 0; i < stores.length; i++) {
                         var s = stores[i];
-                        var keys = Object.keys(s);
-                        for (var j = 0; j < keys.length; j++) {
-                            var k = keys[j];
-                            if (k.toLowerCase().indexOf('accesstoken') >= 0) {
+                        for (var j = 0; j < s.length; j++) {
+                            var k = s.key(j);
+                            var kl = (k || '').toLowerCase();
+                            if (kl.indexOf('accesstoken') >= 0 || kl.indexOf('access_token') >= 0) {
                                 try {
                                     var v = JSON.parse(s.getItem(k));
-                                    var t = v && (v.secret || v.access_token || v.value || v.token);
-                                    if (t && typeof t === 'string' && t.length > 50) return t;
+                                    var t = v && (v.secret || v.access_token || v.value || v.token || v.credential);
+                                    if (t && typeof t === 'string' && t.split('.').length === 3 && t.length > 50) return 'Bearer ' + t;
                                 } catch(e) {}
                             }
+                        }
+                    }
+                    for (var i2 = 0; i2 < stores.length; i2++) {
+                        var s2 = stores[i2];
+                        for (var j2 = 0; j2 < s2.length; j2++) {
+                            var k2 = s2.key(j2);
+                            try {
+                                var raw = s2.getItem(k2);
+                                if (!raw) continue;
+                                if (raw.split('.').length === 3 && raw.length > 100 && !/[\s{]/.test(raw)) return 'Bearer ' + raw;
+                                var v2 = JSON.parse(raw);
+                                if (v2 && typeof v2 === 'object') {
+                                    var props = ['secret','access_token','token','value','credential','bearer','accessToken'];
+                                    for (var p = 0; p < props.length; p++) {
+                                        var t2 = v2[props[p]];
+                                        if (t2 && typeof t2 === 'string' && t2.split('.').length === 3 && t2.length > 100) return 'Bearer ' + t2;
+                                    }
+                                }
+                            } catch(e) {}
                         }
                     }
                 } catch(e2) {}
@@ -109,18 +180,32 @@ class LoginWebViewActivity : AppCompatActivity() {
             setAcceptThirdPartyCookies(webView, true)
         }
 
+        webView.addJavascriptInterface(NativeBridge(), "NativeBridge")
+
         webView.webViewClient = object : WebViewClient() {
 
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                 progressBar.isIndeterminate = true
                 progressBar.visibility = View.VISIBLE
+                Log.d(TAG, "onPageStarted: $url")
+                val lc = url.lowercase()
+                if (lc.contains("microsoftonline") || lc.contains("login.live.com") || lc.contains("login.microsoft")) {
+                    hasSeenMsLogin = true
+                    Log.d(TAG, "hasSeenMsLogin = true")
+                }
             }
 
             override fun onPageFinished(view: WebView, url: String) {
                 progressBar.visibility = View.GONE
-                if (!loginComplete && isOnForzaSite(url)) {
-                    // MSAL stores the token asynchronously after the OAuth code
-                    // exchange â€” give it 1.5 s to settle, then extract via JS.
+                Log.d(TAG, "onPageFinished: $url | hasMs=$hasSeenMsLogin isForzaSite=${isOnForzaSite(url)}")
+                if (isOnForzaSite(url)) {
+                    // Inject fetch/XHR interceptor so any authenticated API call
+                    // from the page is caught immediately via NativeBridge.
+                    view.evaluateJavascript(JS_SETUP_INTERCEPTOR, null)
+                }
+                if (!loginComplete && hasSeenMsLogin && isOnForzaSite(url)) {
+                    // Also scan storage after a short delay to let MSAL finish
+                    // the async token-cache write.
                     webView.postDelayed({ extractMsalToken(attempt = 1) }, 1500)
                 }
             }
@@ -130,6 +215,10 @@ class LoginWebViewActivity : AppCompatActivity() {
                 request: WebResourceRequest
             ): Boolean {
                 val url = request.url.toString()
+                val lc = url.lowercase()
+                if (lc.contains("microsoftonline") || lc.contains("login.live.com") || lc.contains("login.microsoft")) {
+                    hasSeenMsLogin = true
+                }
                 return !TRUSTED.any { url.contains(it) }
             }
 
@@ -178,22 +267,24 @@ class LoginWebViewActivity : AppCompatActivity() {
      */
     private fun extractMsalToken(attempt: Int) {
         if (loginComplete) return
+        Log.d(TAG, "extractMsalToken attempt=$attempt")
         webView.evaluateJavascript(JS_EXTRACT_TOKEN) { rawResult ->
             if (loginComplete) return@evaluateJavascript
-            // evaluateJavascript wraps strings in quotes â€” strip them.
+            Log.d(TAG, "JS result attempt=$attempt raw=${rawResult?.take(120)}")
             val token = rawResult
                 ?.trim('"', '\'', ' ')
                 ?.takeIf { it.isNotBlank() && it != "null" && it.length > 50 }
 
             if (token != null) {
-                // Got the MSAL Bearer token.
-                ForzaApiService.capturedAuthHeader = "Bearer $token"
+                // Got the MSAL Bearer token — token already prefixed by JS.
+                ForzaApiService.capturedAuthHeader = token
                 completeLogin()
-            } else if (attempt < 3) {
-                // Not ready yet â€” retry after another 1.5 s.
-                webView.postDelayed({ extractMsalToken(attempt + 1) }, 1500)
+            } else if (attempt < 6) {
+                // Not ready yet — retry every 2 s (up to 12 s total).
+                webView.postDelayed({ extractMsalToken(attempt + 1) }, 2000)
             } else {
-                // Give up â€” close with whatever cookies/token we have.
+                // Give up — NativeBridge may have already set capturedAuthHeader
+                // via fetch/XHR interception; completeLogin will use it.
                 completeLogin()
             }
         }

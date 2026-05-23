@@ -5,19 +5,19 @@
 .DESCRIPTION
     This script:
       1. Locates the Android SDK / ADB on the machine
-      2. Checks that exactly one Android device is connected via USB (debug mode)
+      2. Checks that at least one Android device is connected via USB (debug mode)
       3. Optionally builds the APK with Gradle (skip with -SkipBuild)
-      4. Installs the APK with `adb install -r`
+      4. Installs the APK with "adb install -r"
 
 .PARAMETER SkipBuild
     Skip the Gradle build and use whatever APK already exists in the output folder.
 
 .EXAMPLE
     # Full build + install
-    .\install.ps1
+    powershell -ExecutionPolicy Bypass -File .\install.ps1
 
     # Install only (APK already built)
-    .\install.ps1 -SkipBuild
+    powershell -ExecutionPolicy Bypass -File .\install.ps1 -SkipBuild
 
 .NOTES
     Requirements:
@@ -30,21 +30,29 @@ param(
     [switch]$SkipBuild
 )
 
-Set-StrictMode -Version Latest
+# Self-relaunch with Bypass if execution policy would block us
+if ($PSVersionTable -and -not ($ExecutionContext.SessionState.LanguageMode -eq 'FullLanguage' -and $PSScriptRoot)) {
+    # Running inline; this is fine
+}
+
 $ErrorActionPreference = "Stop"
 
-# ── Colour helpers ────────────────────────────────────────────────────────────
+# -- Colour helpers ------------------------------------------------------------
 function Write-Step  { param($msg) Write-Host "  >> $msg" -ForegroundColor Cyan }
 function Write-OK    { param($msg) Write-Host "  OK  $msg" -ForegroundColor Green }
-function Write-Fail  { param($msg) Write-Host " ERR  $msg" -ForegroundColor Red ; exit 1 }
+function Write-Fail  {
+    param($msg)
+    Write-Host " ERR  $msg" -ForegroundColor Red
+    exit 1
+}
 
 Write-Host ""
 Write-Host "=======================================" -ForegroundColor Blue
-Write-Host "   Forza Gallery — Install Script      " -ForegroundColor Blue
+Write-Host "   Forza Gallery - Install Script      " -ForegroundColor Blue
 Write-Host "=======================================" -ForegroundColor Blue
 Write-Host ""
 
-# ── 1. Locate Android SDK ─────────────────────────────────────────────────────
+# -- 1. Locate Android SDK -----------------------------------------------------
 Write-Step "Locating Android SDK..."
 
 $sdkRoot = $env:ANDROID_HOME
@@ -52,7 +60,7 @@ if (-not $sdkRoot) { $sdkRoot = $env:ANDROID_SDK_ROOT }
 if (-not $sdkRoot) { $sdkRoot = "$env:LOCALAPPDATA\Android\Sdk" }
 
 if (-not (Test-Path $sdkRoot)) {
-    Write-Fail "Android SDK not found. Set the ANDROID_HOME environment variable to your SDK path."
+    Write-Fail "Android SDK not found. Set ANDROID_HOME to your SDK path."
 }
 Write-OK "SDK: $sdkRoot"
 
@@ -62,7 +70,7 @@ if (-not (Test-Path $adb)) {
 }
 Write-OK "ADB: $adb"
 
-# ── 2. Check device is connected ─────────────────────────────────────────────
+# -- 2. Check device is connected ---------------------------------------------
 Write-Step "Checking connected devices..."
 
 $devices = & $adb devices 2>&1 | Select-String "device$"
@@ -72,15 +80,15 @@ No Android device found.
 
 To fix:
   1. Enable Developer Options on your phone
-     Settings → About phone → tap Build number 7 times
+     Settings -> About phone -> tap Build number 7 times
   2. Enable USB Debugging
-     Settings → Developer options → USB debugging → ON
-  3. Connect the phone via USB and accept the "Allow USB debugging?" prompt
+     Settings -> Developer options -> USB debugging -> ON
+  3. Connect the phone via USB and accept the 'Allow USB debugging?' prompt
 "@
 }
 Write-OK "Device connected: $($devices -join ', ')"
 
-# ── 3. Locate / build the APK ────────────────────────────────────────────────
+# -- 3. Locate / build the APK ------------------------------------------------
 $apkPath = "app\build\outputs\apk\debug\app-debug.apk"
 
 if (-not $SkipBuild) {
@@ -115,7 +123,7 @@ if (-not (Test-Path $apkPath)) {
 }
 Write-OK "APK: $apkPath"
 
-# ── 4. Install the APK ───────────────────────────────────────────────────────
+# -- 4. Install the APK -------------------------------------------------------
 Write-Step "Installing APK on device..."
 
 $result = & $adb install -r $apkPath 2>&1
