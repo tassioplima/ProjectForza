@@ -3,9 +3,11 @@
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.os.Bundle
+import android.util.Base64
 import android.util.Log
 import android.view.View
 import android.webkit.CookieManager
+import org.json.JSONObject
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -44,7 +46,7 @@ class LoginWebViewActivity : AppCompatActivity() {
 
     /**
      * JavaScript interface injected into the WebView.
-     * Receives Bearer tokens from the fetch/XHR interceptor script.
+     * Receives Bearer tokens and the typed email from page scripts.
      */
     private inner class NativeBridge {
         @android.webkit.JavascriptInterface
@@ -52,7 +54,17 @@ class LoginWebViewActivity : AppCompatActivity() {
             Log.d(TAG, "NativeBridge.onToken called, length=${authHeader.length}")
             if (!loginComplete && authHeader.isNotBlank() && authHeader.length >= 20) {
                 ForzaApiService.capturedAuthHeader = authHeader
+                saveLoginHintFromToken(authHeader)
                 runOnUiThread { completeLogin() }
+            }
+        }
+
+        /** Called by JS when the user types their email and taps Next on the MS login page. */
+        @android.webkit.JavascriptInterface
+        fun onEmail(email: String) {
+            if (email.contains('@')) {
+                Log.d(TAG, "NativeBridge.onEmail captured: $email")
+                saveLoginHint(email)
             }
         }
     }
@@ -72,6 +84,9 @@ class LoginWebViewActivity : AppCompatActivity() {
             "forza.net", "microsoft.com", "microsoftonline.com",
             "live.com", "xbox.com", "windows.net", "xboxlive.com"
         )
+
+        private const val PREFS_NAME = "fzg_prefs"
+        private const val KEY_LOGIN_HINT = "login_hint"
 
         /**
          * Injected into forza.net on page load.
@@ -134,6 +149,59 @@ class LoginWebViewActivity : AppCompatActivity() {
                     if ((n || '').toLowerCase() === 'authorization' && (v || '').indexOf('Bearer ') === 0) send(v);
                     return oS.apply(this, arguments);
                 };
+            })();
+        """.trimIndent()
+
+        /**
+         * Injected into the Microsoft login page when a saved email hint is available.
+         * Pre-fills the loginfmt field and dispatches input events so React/Angular
+         * frameworks detect the value change.
+         * [email] is substituted at runtime via string replacement.
+         */
+        fun jsPrefillEmail(email: String): String = """
+            (function() {
+                if (window.__fgPrefilled) return;
+                function fill() {
+                    var input = document.querySelector(
+                        'input[name="loginfmt"], input[type="email"], input[name="username"]'
+                    );
+                    if (input && !input.value) {
+                        window.__fgPrefilled = true;
+                        input.value = ${JSONObject.quote(email)};
+                        ['input','change','keyup'].forEach(function(e) {
+                            input.dispatchEvent(new Event(e, { bubbles: true }));
+                        });
+                    } else if (!input) {
+                        setTimeout(fill, 500);
+                    }
+                }
+                fill();
+            })();
+        """.trimIndent()
+
+        /**
+         * Injected into the Microsoft login page to capture the email typed by
+         * the user before they tap Next, so it is saved for future logins.
+         */
+        private val JS_CAPTURE_EMAIL = """
+            (function() {
+                if (window.__fgEmailCapture) return;
+                window.__fgEmailCapture = true;
+                function capture() {
+                    var input = document.querySelector(
+                        'input[name="loginfmt"], input[type="email"], input[name="username"]'
+                    );
+                    if (input && input.value && input.value.indexOf('@') > 0) {
+                        try { window.NativeBridge.onEmail(input.value.trim()); } catch(e) {}
+                    }
+                }
+                document.addEventListener('submit', capture, true);
+                var btn = document.querySelector('input[type="submit"][value="Next"], button[type="submit"]');
+                if (btn) btn.addEventListener('click', capture);
+                setTimeout(function() {
+                    var btn2 = document.querySelector('input[type="submit"], button[type="submit"]');
+                    if (btn2) btn2.addEventListener('click', capture);
+                }, 2000);
             })();
         """.trimIndent()
 
@@ -261,6 +329,10 @@ class LoginWebViewActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView, url: String) {
                 progressBar.visibility = View.GONE
                 Log.d(TAG, "onPageFinished: $url | hasMs=$hasSeenMsLogin isForzaSite=${isOnForzaSite(url)}")
+                val lc = url.lowercase()
+                val isMsLogin = lc.contains("microsoftonline") ||
+                    lc.contains("login.live.com") ||
+                    lc.contains("login.microsoft")
                 if (isOnForzaSite(url)) {
                     // Inject fetch/XHR interceptor so any authenticated API call
                     // from the page is caught immediately via NativeBridge.
@@ -268,6 +340,14 @@ class LoginWebViewActivity : AppCompatActivity() {
                     if (!hasSeenMsLogin) {
                         // Auto-click the Sign In button — skips the forza.net splash page.
                         view.evaluateJavascript(JS_AUTO_CLICK_SIGNIN, null)
+                    }
+                } else if (isMsLogin) {
+                    // Always capture what the user types so we can save it.
+                    view.evaluateJavascript(JS_CAPTURE_EMAIL, null)
+                    // Pre-fill email field if we have a saved hint.
+                    val hint = loadLoginHint()
+                    if (!hint.isNullOrBlank()) {
+                        view.evaluateJavascript(jsPrefillEmail(hint), null)
                     }
                 }
                 if (!loginComplete && hasSeenMsLogin && hasLeftForzaSite && isOnForzaSite(url)) {
@@ -361,9 +441,41 @@ class LoginWebViewActivity : AppCompatActivity() {
     private fun completeLogin() {
         if (loginComplete) return
         loginComplete = true
+        // Try to persist email hint from the token before closing.
+        val token = ForzaApiService.capturedAuthHeader
+        if (!token.isNullOrBlank()) saveLoginHintFromToken(token)
         CookieManager.getInstance().flush()
         setResult(RESULT_OK)
         finish()
+    }
+
+    /** Saves [email] to SharedPreferences for use as login hint on next launch. */
+    private fun saveLoginHint(email: String) {
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .edit().putString(KEY_LOGIN_HINT, email).apply()
+        Log.d(TAG, "saveLoginHint: $email")
+    }
+
+    /** Returns the saved login hint email, or null if none. */
+    private fun loadLoginHint(): String? =
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            .getString(KEY_LOGIN_HINT, null)
+
+    /**
+     * Decodes the JWT payload of [token] ("Bearer <jwt>") and extracts
+     * the account email from standard OIDC/MS claims.
+     * Silently ignored if the token is opaque (non-JWT).
+     */
+    private fun saveLoginHintFromToken(token: String) {
+        try {
+            val parts = token.removePrefix("Bearer ").split(".")
+            if (parts.size < 2) return
+            val padded = parts[1].let { it + "=".repeat((4 - it.length % 4) % 4) }
+            val payload = JSONObject(String(Base64.decode(padded, Base64.URL_SAFE or Base64.NO_WRAP)))
+            val email = listOf("preferred_username", "email", "upn", "unique_name")
+                .firstNotNullOfOrNull { payload.optString(it).takeIf { v -> v.contains('@') } }
+            if (!email.isNullOrBlank()) saveLoginHint(email)
+        } catch (_: Exception) { /* opaque token — ignore */ }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
