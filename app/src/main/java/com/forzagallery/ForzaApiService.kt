@@ -1,5 +1,7 @@
 package com.forzagallery
 
+import android.content.Context
+import android.util.Base64
 import android.util.Log
 import android.webkit.CookieManager
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +27,12 @@ object ForzaApiService {
 
     private const val TAG = "FZG_Api"
     private const val GALLERY_URL = "https://api.forza.net/api/v4/me/gallery/FH6"
+    private const val PREFS_NAME  = "fzg_prefs"
+    private const val KEY_TOKEN   = "auth_token"
+    private const val KEY_TOKEN_TS = "auth_token_ts"
+
+    /** Application context set once by [init]. */
+    private var appContext: Context? = null
 
     /**
      * Bearer token captured from the WebView's outbound API requests during login.
@@ -32,6 +40,71 @@ object ForzaApiService {
      * that the forza.net SPA uses, which may differ from cookie-based auth.
      */
     var capturedAuthHeader: String? = null
+
+    /** Must be called once (e.g. in [MainActivity.onCreate]) before any token operations. */
+    fun init(context: Context) {
+        appContext = context.applicationContext
+    }
+
+    /**
+     * Saves [capturedAuthHeader] to SharedPreferences with a timestamp.
+     * Call after a successful login so the token survives process death.
+     */
+    fun persistToken() {
+        val token = capturedAuthHeader ?: return
+        appContext?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            ?.edit()
+            ?.putString(KEY_TOKEN, token)
+            ?.putLong(KEY_TOKEN_TS, System.currentTimeMillis())
+            ?.apply()
+        Log.d(TAG, "persistToken: saved (${token.length} chars)")
+    }
+
+    /**
+     * Loads a previously persisted token and, if it has not expired, restores
+     * [capturedAuthHeader]. Returns true when a valid token was restored.
+     *
+     * For JWT tokens the `exp` claim is checked directly. For opaque tokens a
+     * 1-hour window from the save timestamp is used as a conservative fallback.
+     */
+    fun restoreToken(): Boolean {
+        val ctx   = appContext ?: return false
+        val prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val token = prefs.getString(KEY_TOKEN, null) ?: return false
+        val ts    = prefs.getLong(KEY_TOKEN_TS, 0L)
+        if (!isTokenValid(token, ts)) {
+            prefs.edit().remove(KEY_TOKEN).remove(KEY_TOKEN_TS).apply()
+            Log.d(TAG, "restoreToken: token expired, cleared")
+            return false
+        }
+        capturedAuthHeader = token
+        Log.d(TAG, "restoreToken: OK")
+        return true
+    }
+
+    /** Clears the token from memory and from SharedPreferences. Called on logout. */
+    fun clearToken() {
+        capturedAuthHeader = null
+        appContext?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            ?.edit()?.remove(KEY_TOKEN)?.remove(KEY_TOKEN_TS)?.apply()
+        Log.d(TAG, "clearToken")
+    }
+
+    private fun isTokenValid(token: String, savedAt: Long): Boolean {
+        return try {
+            val jwt   = token.removePrefix("Bearer ")
+            val parts = jwt.split(".")
+            if (parts.size < 3) {
+                // Opaque token — trust it for up to 1 hour from when it was saved.
+                return savedAt > 0 && System.currentTimeMillis() - savedAt < 3_600_000L
+            }
+            val padded  = parts[1].let { it + "=".repeat((4 - it.length % 4) % 4) }
+            val payload = JSONObject(String(Base64.decode(padded, Base64.URL_SAFE or Base64.NO_WRAP)))
+            val exp     = payload.optLong("exp", 0L)
+            if (exp == 0L) return true          // No exp claim — treat as valid.
+            exp * 1000L > System.currentTimeMillis() + 300_000L  // 5-min buffer.
+        } catch (_: Exception) { true }
+    }
 
     private val FULL_URL_FIELDS = listOf(
         "photoCdnPath", "screenshotCdnPath", "imageCdnPath", "cdnPath",

@@ -38,6 +38,10 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // Restore a previously persisted token so the gallery works without re-login.
+        ForzaApiService.init(this)
+        ForzaApiService.restoreToken()
+
         loginButton = findViewById(R.id.loginButton)
         loginProgress = findViewById(R.id.loginProgress)
 

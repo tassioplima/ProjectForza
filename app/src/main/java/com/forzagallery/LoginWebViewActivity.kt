@@ -444,6 +444,7 @@ class LoginWebViewActivity : AppCompatActivity() {
         // Try to persist email hint from the token before closing.
         val token = ForzaApiService.capturedAuthHeader
         if (!token.isNullOrBlank()) saveLoginHintFromToken(token)
+        ForzaApiService.persistToken()
         CookieManager.getInstance().flush()
         setResult(RESULT_OK)
         finish()

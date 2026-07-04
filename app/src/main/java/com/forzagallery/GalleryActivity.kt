@@ -445,7 +445,7 @@ class GalleryActivity : AppCompatActivity() {
     // ── Logout ────────────────────────────────────────────────────────────────
 
     private fun logout() {
-        ForzaApiService.capturedAuthHeader = null
+        ForzaApiService.clearToken()
         CookieManager.getInstance().removeAllCookies(null)
         CookieManager.getInstance().flush()
         startActivity(
