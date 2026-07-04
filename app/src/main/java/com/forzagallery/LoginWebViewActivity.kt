@@ -74,6 +74,43 @@ class LoginWebViewActivity : AppCompatActivity() {
         )
 
         /**
+         * Injected into forza.net on page load.
+         * Automatically finds and clicks the "Sign in" button so the user goes
+         * straight to the Microsoft login page without any interaction on forza.net.
+         */
+        private val JS_AUTO_CLICK_SIGNIN = """
+            (function() {
+                if (window.__fgAutoClicked) return;
+                function tryClick() {
+                    var els = document.querySelectorAll('a, button');
+                    for (var i = 0; i < els.length; i++) {
+                        var t = (els[i].textContent || els[i].innerText || '').trim().toLowerCase();
+                        if (t === 'sign in' || t === 'entrar' || t === 'signin') {
+                            window.__fgAutoClicked = true;
+                            els[i].click();
+                            return true;
+                        }
+                    }
+                    var link = document.querySelector(
+                        'a[href*="signin"], a[href*="login"], a[href*="auth"], ' +
+                        '[class*="signin"], [class*="login"], [id*="signin"], [id*="login"]'
+                    );
+                    if (link) {
+                        window.__fgAutoClicked = true;
+                        link.click();
+                        return true;
+                    }
+                    return false;
+                }
+                if (!tryClick()) {
+                    setTimeout(tryClick, 600);
+                    setTimeout(tryClick, 1500);
+                    setTimeout(tryClick, 3000);
+                }
+            })();
+        """.trimIndent()
+
+        /**
          * Injected into every forza.net page on load.
          * Wraps fetch and XHR so any Authorization: Bearer header is sent to
          * [NativeBridge.onToken] immediately, before we even look at storage.
@@ -196,6 +233,9 @@ class LoginWebViewActivity : AppCompatActivity() {
 
         webView.addJavascriptInterface(NativeBridge(), "NativeBridge")
 
+        // Hidden until the Microsoft login page loads — forza.net loads silently in background.
+        webView.visibility = View.INVISIBLE
+
         webView.webViewClient = object : WebViewClient() {
 
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
@@ -207,6 +247,8 @@ class LoginWebViewActivity : AppCompatActivity() {
                     hasSeenMsLogin = true
                     hasLeftForzaSite = true
                     Log.d(TAG, "hasSeenMsLogin = true")
+                    // Microsoft page detected — reveal the WebView.
+                    webView.visibility = View.VISIBLE
                 } else if (!isOnForzaSite(url)) {
                     hasLeftForzaSite = true
                 }
@@ -223,6 +265,10 @@ class LoginWebViewActivity : AppCompatActivity() {
                     // Inject fetch/XHR interceptor so any authenticated API call
                     // from the page is caught immediately via NativeBridge.
                     view.evaluateJavascript(JS_SETUP_INTERCEPTOR, null)
+                    if (!hasSeenMsLogin) {
+                        // Auto-click the Sign In button — skips the forza.net splash page.
+                        view.evaluateJavascript(JS_AUTO_CLICK_SIGNIN, null)
+                    }
                 }
                 if (!loginComplete && hasSeenMsLogin && hasLeftForzaSite && isOnForzaSite(url)) {
                     // Returned to forza.net after MS OAuth — scan storage for token.
